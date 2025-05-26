@@ -147,7 +147,8 @@ namespace BreakGeodesInBulk
 
             int targetAmount = Config.GeodesToBreak switch
             {
-                GeodeBreakMode.AllIfInventoryFits => Math.Min(Game1.player.freeSpotsInInventory(), maxAffordable),
+                GeodeBreakMode.AllIfInventoryFits =>Math.Min(Game1.player.freeSpotsInInventory() - (__instance.heldItem != null ? 1 : 0),maxAffordable),
+
                 GeodeBreakMode.AllExtraFallsOnGround => Math.Min(held.Stack, maxAffordable),
                 _ => 1
             };
