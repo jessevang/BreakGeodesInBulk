@@ -6,7 +6,7 @@
   "UniqueID": "Darkmushu1.BreakGeodesInBulk",
   "EntryDll": "BreakGeodesInBulk.dll",
   "MinimumApiVersion": "4.0.0",
-  "UpdateKeys": [],
+  "UpdateKeys": [ "Nexus:34257" ],
   "Dependencies": [
     {
       "UniqueID": "spacechase0.GenericModConfigMenu",
