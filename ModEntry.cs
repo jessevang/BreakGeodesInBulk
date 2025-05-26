@@ -12,7 +12,7 @@ namespace BreakGeodesInBulk
 {
     public class ModConfig
     {
-        public GeodeBreakMode GeodesToBreak { get; set; } = GeodeBreakMode.AllExtraFallsOnGround;
+        public GeodeBreakMode GeodesToBreak { get; set; } = GeodeBreakMode.AllIfInventoryFits;
         public int OverlayOffsetX { get; set; } = 40;
         public int OverlayOffsetY { get; set; } = 60;
         public float OverlayScale { get; set; } = 1.0f;
