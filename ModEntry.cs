@@ -164,41 +164,44 @@ namespace BreakGeodesInBulk
             Random backupRandom = Game1.random;
 
 
-            for (int i = 0; i < targetAmount; i++)
-            {
-                Item tempGeode = held.getOne(); // simulate the single geode
+            //added this if less than 1 item just let the last geode be broken by 
+   
 
-                if (tempGeode.QualifiedItemId == "(O)791" && !Game1.netWorldState.Value.GoldenCoconutCracked)
+
+                for (int i = 0; i < targetAmount-1; i++)
                 {
-                    rewards.Add(ItemRegistry.Create("(O)73")); // Golden Coconut first-time guarantee
-                    Game1.netWorldState.Value.GoldenCoconutCracked = true;
-                    continue;
+                    Item tempGeode = held.getOne(); // simulate the single geode
+
+                    if (tempGeode.QualifiedItemId == "(O)791" && !Game1.netWorldState.Value.GoldenCoconutCracked)
+                    {
+                        rewards.Add(ItemRegistry.Create("(O)73")); // Golden Coconut first-time guarantee
+                        Game1.netWorldState.Value.GoldenCoconutCracked = true;
+                        continue;
+                    }
+
+                    if (tempGeode.QualifiedItemId == "(O)MysteryBox" || tempGeode.QualifiedItemId == "(O)GoldenMysteryBox")
+                    {
+                        Game1.stats.Increment("MysteryBoxesOpened");
+                    }
+                    else
+                    {
+                        Game1.stats.GeodesCracked++;
+                    }
+
+                    // Ensure unique RNG per break
+                    Random freshRandom = Utility.CreateRandom(
+                        Game1.uniqueIDForThisGame,
+                        Game1.stats.DaysPlayed,
+                        Game1.timeOfDay + Game1.random.Next()
+                    );
+
+                    Game1.random = freshRandom;
+                    rewards.Add(Utility.getTreasureFromGeode(tempGeode));
+
                 }
-
-                if (tempGeode.QualifiedItemId == "(O)MysteryBox" || tempGeode.QualifiedItemId == "(O)GoldenMysteryBox")
-                {
-                    Game1.stats.Increment("MysteryBoxesOpened");
-                }
-                else
-                {
-                    Game1.stats.GeodesCracked++;
-                }
-
-                // Ensure unique RNG per break
-                Random freshRandom = Utility.CreateRandom(
-                    Game1.uniqueIDForThisGame,
-                    Game1.stats.DaysPlayed,
-                    Game1.timeOfDay + Game1.random.Next()
-                );
-
-                Game1.random = freshRandom;
-                rewards.Add(Utility.getTreasureFromGeode(tempGeode));
-
-            }
             Game1.random = backupRandom;
-
-
-
+            
+            
             __instance.geodeSpot.item = held.getOne();
             held.Stack -= targetAmount;
             if (held.Stack <= 0)
@@ -233,6 +236,8 @@ namespace BreakGeodesInBulk
             return false;
         }
 
+        
+        
         private static void DrawOverlay_Postfix(GeodeMenu __instance, SpriteBatch b)
         {
             if (showBreakAmountTimer > 0)
