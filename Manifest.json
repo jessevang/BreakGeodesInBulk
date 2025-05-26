@@ -1,0 +1,20 @@
+{
+  "Name": "BreakGeodesInBulk",
+  "Author": "Darkmushu1",
+  "Version": "1.0.0",
+  "Description": "Break Geodes in Bulk at the Blacksmith",
+  "UniqueID": "Darkmushu1.BreakGeodesInBulk",
+  "EntryDll": "BreakGeodesInBulk.dll",
+  "MinimumApiVersion": "4.0.0",
+  "UpdateKeys": [],
+  "Dependencies": [
+    {
+      "UniqueID": "spacechase0.GenericModConfigMenu",
+      "IsRequired": false
+    }
+  ]
+}
+
+
+
+
