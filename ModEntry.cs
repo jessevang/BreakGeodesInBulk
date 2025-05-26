@@ -157,11 +157,43 @@ namespace BreakGeodesInBulk
             lastBreakAmount = targetAmount;
 
             List<Item> rewards = new();
+            Random backupRandom = Game1.random;
+
+
             for (int i = 0; i < targetAmount; i++)
             {
-                Game1.stats.GeodesCracked++;
-                rewards.Add(Utility.getTreasureFromGeode(held));
+                Item tempGeode = held.getOne(); // simulate the single geode
+
+                if (tempGeode.QualifiedItemId == "(O)791" && !Game1.netWorldState.Value.GoldenCoconutCracked)
+                {
+                    rewards.Add(ItemRegistry.Create("(O)73")); // Golden Coconut first-time guarantee
+                    Game1.netWorldState.Value.GoldenCoconutCracked = true;
+                    continue;
+                }
+
+                if (tempGeode.QualifiedItemId == "(O)MysteryBox" || tempGeode.QualifiedItemId == "(O)GoldenMysteryBox")
+                {
+                    Game1.stats.Increment("MysteryBoxesOpened");
+                }
+                else
+                {
+                    Game1.stats.GeodesCracked++;
+                }
+
+                // Ensure unique RNG per break
+                Random freshRandom = Utility.CreateRandom(
+                    Game1.uniqueIDForThisGame,
+                    Game1.stats.DaysPlayed,
+                    Game1.timeOfDay + Game1.random.Next()
+                );
+
+                Game1.random = freshRandom;
+                rewards.Add(Utility.getTreasureFromGeode(tempGeode));
+
             }
+            Game1.random = backupRandom;
+
+
 
             __instance.geodeSpot.item = held.getOne();
             held.Stack -= targetAmount;
