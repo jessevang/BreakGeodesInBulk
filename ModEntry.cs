@@ -144,14 +144,18 @@ namespace BreakGeodesInBulk
                 return false;
             }
 
-
             int targetAmount = Config.GeodesToBreak switch
             {
-                GeodeBreakMode.AllIfInventoryFits =>Math.Min(Game1.player.freeSpotsInInventory() - (__instance.heldItem != null ? 1 : 0),maxAffordable),
+                GeodeBreakMode.AllIfInventoryFits =>
+                    Math.Min(
+                        Math.Min(held.Stack, maxAffordable),
+                        Game1.player.freeSpotsInInventory() - (__instance.heldItem != null ? 1 : 0)
+                    ),
 
                 GeodeBreakMode.AllExtraFallsOnGround => Math.Min(held.Stack, maxAffordable),
                 _ => 1
             };
+
 
             showBreakAmountTimer = 120;
             lastBreakAmount = targetAmount;
