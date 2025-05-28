@@ -13,9 +13,11 @@ namespace BreakGeodesInBulk
     public class ModConfig
     {
         public GeodeBreakMode GeodesToBreak { get; set; } = GeodeBreakMode.AllIfInventoryFits;
+        public float AnimationSpeedMultiplier { get; set; } = 0.3f;
         public int OverlayOffsetX { get; set; } = 40;
         public int OverlayOffsetY { get; set; } = 60;
         public float OverlayScale { get; set; } = 1.0f;
+
     }
 
     public enum GeodeBreakMode
@@ -95,6 +97,20 @@ namespace BreakGeodesInBulk
             );
 
 
+            gmcm.AddNumberOption(
+                mod: ModManifest,
+                name: () => "Animation Speed Multiplier",
+                tooltip: () => "Adjust how fast Clint breaks geodes. Lower = faster. Example: 0.5 = 2x faster.",
+                getValue: () => Config.AnimationSpeedMultiplier,
+                setValue: value => Config.AnimationSpeedMultiplier = value,
+                min: 0.1f,
+                max: 1f,
+                interval: 0.1f
+            );
+
+
+
+            /* Used for troubleshooting the number value but not needed, commenting out.
 
             gmcm.AddNumberOption(
                 mod: ModManifest,
@@ -120,7 +136,7 @@ namespace BreakGeodesInBulk
                 setValue: value => Config.OverlayScale = MathF.Max(0.1f, MathF.Min(2f, value)) // clamps between 0.1 and 2.0
             );
 
-
+            */
 
         }
 
@@ -133,8 +149,9 @@ namespace BreakGeodesInBulk
             if (held == null || !Utility.IsGeode(held) || Game1.player.Money < 25 || __instance.geodeAnimationTimer > 0)
                 return true;
 
+            int heldStack = held.Stack;
             int maxAffordable = Game1.player.Money / 25;
-            int maxBreakable = Math.Min(held.Stack, maxAffordable);
+            int maxBreakable = Math.Min(heldStack, maxAffordable);
 
             if (maxBreakable <= 0)
             {
@@ -144,64 +161,63 @@ namespace BreakGeodesInBulk
                 return false;
             }
 
+            int freeSlots = Game1.player.freeSpotsInInventory();
+
             int targetAmount = Config.GeodesToBreak switch
             {
                 GeodeBreakMode.AllIfInventoryFits =>
-                    Math.Min(
-                        Math.Min(held.Stack, maxAffordable),
-                        Game1.player.freeSpotsInInventory() - (__instance.heldItem != null ? 1 : 0)
-                    ),
+                    heldStack <= freeSlots
+                        ? Math.Min(heldStack, maxBreakable) // all rewards can fit
+                        : Math.Max(0, Math.Min(maxBreakable, freeSlots - 1)), // reserve slot for held item if some will remain
 
-                GeodeBreakMode.AllExtraFallsOnGround => Math.Min(held.Stack, maxAffordable),
+                GeodeBreakMode.AllExtraFallsOnGround => maxBreakable,
                 _ => 1
             };
 
+            if (targetAmount <= 0)
+            {
+                Game1.showRedMessage("Not enough inventory space for geode rewards.");
+                return false;
+            }
 
-            showBreakAmountTimer = 120;
+            showBreakAmountTimer = (int)(120 * Config.AnimationSpeedMultiplier);
             lastBreakAmount = targetAmount;
 
             List<Item> rewards = new();
             Random backupRandom = Game1.random;
 
+            for (int i = 0; i < targetAmount - 1; i++)
+            {
+                Item tempGeode = held.getOne();
 
-            //added this if less than 1 item just let the last geode be broken by 
-   
-
-
-                for (int i = 0; i < targetAmount-1; i++)
+                if (tempGeode.QualifiedItemId == "(O)791" && !Game1.netWorldState.Value.GoldenCoconutCracked)
                 {
-                    Item tempGeode = held.getOne(); // simulate the single geode
-
-                    if (tempGeode.QualifiedItemId == "(O)791" && !Game1.netWorldState.Value.GoldenCoconutCracked)
-                    {
-                        rewards.Add(ItemRegistry.Create("(O)73")); // Golden Coconut first-time guarantee
-                        Game1.netWorldState.Value.GoldenCoconutCracked = true;
-                        continue;
-                    }
-
-                    if (tempGeode.QualifiedItemId == "(O)MysteryBox" || tempGeode.QualifiedItemId == "(O)GoldenMysteryBox")
-                    {
-                        Game1.stats.Increment("MysteryBoxesOpened");
-                    }
-                    else
-                    {
-                        Game1.stats.GeodesCracked++;
-                    }
-
-                    // Ensure unique RNG per break
-                    Random freshRandom = Utility.CreateRandom(
-                        Game1.uniqueIDForThisGame,
-                        Game1.stats.DaysPlayed,
-                        Game1.timeOfDay + Game1.random.Next()
-                    );
-
-                    Game1.random = freshRandom;
-                    rewards.Add(Utility.getTreasureFromGeode(tempGeode));
-
+                    rewards.Add(ItemRegistry.Create("(O)73"));
+                    Game1.netWorldState.Value.GoldenCoconutCracked = true;
+                    continue;
                 }
+
+                if (tempGeode.QualifiedItemId == "(O)MysteryBox" || tempGeode.QualifiedItemId == "(O)GoldenMysteryBox")
+                {
+                    Game1.stats.Increment("MysteryBoxesOpened");
+                }
+                else
+                {
+                    Game1.stats.GeodesCracked++;
+                }
+
+                Random freshRandom = Utility.CreateRandom(
+                    Game1.uniqueIDForThisGame,
+                    Game1.stats.DaysPlayed,
+                    Game1.timeOfDay + Game1.random.Next()
+                );
+
+                Game1.random = freshRandom;
+                rewards.Add(Utility.getTreasureFromGeode(tempGeode));
+            }
+
             Game1.random = backupRandom;
-            
-            
+
             __instance.geodeSpot.item = held.getOne();
             held.Stack -= targetAmount;
             if (held.Stack <= 0)
@@ -209,18 +225,19 @@ namespace BreakGeodesInBulk
 
             Game1.player.Money -= 25 * targetAmount;
             Game1.playSound("stoneStep");
+            
             __instance.clint.setCurrentAnimation(new List<FarmerSprite.AnimationFrame>
             {
-                new(8, 300),
-                new(9, 200),
-                new(10, 80),
-                new(11, 200),
-                new(12, 100),
-                new(8, 300)
+                new(8, (int)(300*Config.AnimationSpeedMultiplier)),
+                new(9, (int)(200*Config.AnimationSpeedMultiplier)),
+                new(10, (int)(80*Config.AnimationSpeedMultiplier)),
+                new(11, (int)(200*Config.AnimationSpeedMultiplier)),
+                new(12, (int)(100*Config.AnimationSpeedMultiplier)),
+                new(8, (int)(300*Config.AnimationSpeedMultiplier))
             });
             __instance.clint.loop = false;
 
-            Game1.delayedActions.Add(new DelayedAction(2700, () =>
+            Game1.delayedActions.Add(new DelayedAction((int)(2700 * Config.AnimationSpeedMultiplier), () =>
             {
                 foreach (Item reward in rewards)
                 {
@@ -231,13 +248,13 @@ namespace BreakGeodesInBulk
                 }
             }));
 
-
-            __instance.geodeAnimationTimer = 2700;
+            __instance.geodeAnimationTimer = (int)(2700* Config.AnimationSpeedMultiplier);
             return false;
         }
 
-        
-        
+
+
+
         private static void DrawOverlay_Postfix(GeodeMenu __instance, SpriteBatch b)
         {
             if (showBreakAmountTimer > 0)
