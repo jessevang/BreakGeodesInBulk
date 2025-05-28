@@ -1,7 +1,7 @@
 {
   "Name": "BreakGeodesInBulk",
   "Author": "Darkmushu1",
-  "Version": "1.0.1",
+  "Version": "1.0.2",
   "Description": "Break Geodes in Bulk at the Blacksmith",
   "UniqueID": "Darkmushu1.BreakGeodesInBulk",
   "EntryDll": "BreakGeodesInBulk.dll",
