@@ -62,14 +62,12 @@ namespace BreakGeodesInBulk
 
         public void Log(string message, LogLevel level = LogLevel.Info)
         {
-            if (level == LogLevel.Debug || level == LogLevel.Trace)
-            {
-                if (!Config.DebugMode)
-                    return; 
-            }
+            if (!Config.DebugMode)
+                return;
 
             Monitor.Log(message, level);
         }
+
 
 
         private void generateGMCM()
